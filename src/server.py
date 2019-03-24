@@ -53,6 +53,21 @@ class ClientRequest(Request):
         self.sender_ip = sender_address[0]
         self.sender_port = sender_address[1]
 
+    def convert_to_message(self):
+        if self.http_request_data["Host"] in self.uri:
+            uri = self.uri[self.uri.find(self.http_request_data["Host"]) + len(self.http_request_data["Host"]):]
+        else:
+            uri = self.uri
+
+        packet = self.method + ' ' + uri + ' ' + self.version + '\r\n'
+
+        for key, value in self.http_request_data.items():
+            packet += key + ': ' + value + '\r\n'
+
+        packet += '\r\n'
+
+        return packet
+
     def __str__(self):
         return "\nfrom IP: " + str(self.sender_ip) + "\nfrom port:" + str(self.sender_port) + "\nmethod: " + str(
             self.method) + "\nuri:" + str(self.uri) + "\nversion:" + str(self.version) + "\noptions:" + str(

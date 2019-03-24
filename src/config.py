@@ -12,8 +12,6 @@ class Config:
             return "URL: " + self.url + "\nnotify: " + str(self.notify)
 
     def __init__(self, config_path):
-        # self.port = 8080
-
         with open(config_path) as json_file:
             data = json.load(json_file)
 
@@ -23,6 +21,8 @@ class Config:
             # Restriction
             restriction_object = data['restriction']
             self.is_restricted = restriction_object['enable']
+            self.admin_data = restriction_object['adminData']
+
             self.restricted_hosts = []
             for json_object in restriction_object['targets']:
                 self.restricted_hosts.append(Config.RestrictedHost(json_object))
@@ -37,6 +37,12 @@ class Config:
             self.must_log = logging_object['enable']
             self.clear_log = logging_object['clear']
             self.log_file_path = logging_object['logFile']
+
+    def get_server_name(self):
+        return self.privacy_user_agent
+
+    def get_admin_data_path(self):
+        return self.admin_data
 
     def clear_log_file(self):
         return self.clear_log

@@ -2,9 +2,9 @@ import sys
 
 import logging
 
-from config import Config
-from server import Server
+from src.config import Config
 from src.logger import Logger
+from src.server import Server
 
 
 def main():

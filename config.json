@@ -16,6 +16,7 @@
     },
     "restriction": {
         "enable": true,
+        "adminData": "../admin",
         "targets": [
             {
                 "URL": "sib1.ir",
