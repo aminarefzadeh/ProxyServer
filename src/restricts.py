@@ -75,11 +75,14 @@ class Restricts:
             password = ''
 
             with open(self.admin_data_file, 'r') as admin_file:
-                username = admin_file.readline()
+                username = admin_file.readline()[0:-1]
                 password = admin_file.readline()
 
             if username == '' or password == '':
                 Logger.log_message('Email have not been sent.')
+
+            print(username)
+            print(password)
 
             up = base64.b64encode(("\000" + username + "\000" + password).encode())
 
