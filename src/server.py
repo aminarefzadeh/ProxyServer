@@ -20,8 +20,8 @@ class Request:
 
         http_lines = raw_packet.decode("utf-8", "ignore").split("\r\n")
 
-        while '' in http_lines:
-            http_lines.remove('')
+        # while '' in http_lines:
+        #     http_lines.remove('')
 
         if not len(http_lines):
             self.valid = False
@@ -191,7 +191,7 @@ class ProxyServerThread(Thread):
                 break
 
             forward_socket.send(proxy_request.convert_to_message().encode('ascii', 'ignore'))
-            # forward_socket.settimeout(2)
+            forward_socket.settimeout(2)
             forward_response = SocketUtils.recv_all(forward_socket)
             Logger.log_packet(forward_response, "Server Response")
             forward_socket.close()
