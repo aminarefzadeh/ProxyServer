@@ -1,7 +1,6 @@
 .idea/
 **proxy.log
 **.pyc
-**__init__.py
 admin
 temp.py
 **__pycache__**
