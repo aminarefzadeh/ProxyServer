@@ -34,7 +34,11 @@ class Request:
 
         del http_lines[0]
 
-        for item in http_lines:
+        index = 0
+        for index in range(0,len(http_lines)):
+            item = http_lines[index]
+            if item == '' :
+                break
             if ": " in item:
                 parsed_line = item.split(": ")
                 self.http_request_data[parsed_line[0]] = parsed_line[1]
@@ -42,13 +46,22 @@ class Request:
                 parsed_line = item.split(":")
                 self.http_request_data[parsed_line[0]] = parsed_line[1]
 
+        self.body = ''
+        index += 1
+        while index < len(http_lines):
+            self.body += http_lines[index]
+            self.body += '\r\n'
+            index += 1
+
+
+
 
 class ClientRequest(Request):
     def __init__(self, sender_address, raw_packet):
         Request.__init__(self, raw_packet)
-        http_lines = raw_packet.decode('utf-8', 'ignore').split("\r\n")
-        while '' in http_lines:
-            http_lines.remove('')
+        # http_lines = raw_packet.decode('utf-8', 'ignore').split("\r\n")
+        # while '' in http_lines:
+        #     http_lines.remove('')
 
         self.sender_ip = sender_address[0]
         self.sender_port = sender_address[1]
@@ -66,6 +79,8 @@ class ClientRequest(Request):
 
         packet += '\r\n'
 
+        packet += self.body
+
         return packet
 
     def __str__(self):
@@ -82,9 +97,11 @@ class ProxyRequest(Request):
         self.version = 'HTTP/1.0'
 
         self.http_request_data = http_request.http_request_data
-        self.http_request_data['accept-encoding'] = 'deflate'
+        self.http_request_data['Accept-Encoding'] = 'deflate'
         self.http_request_data['Connection'] = 'Close'
         self.http_request_data.pop('Proxy-Connection', None)
+
+        self.body = http_request.body
 
     def convert_to_message(self):
         if self.http_request_data["Host"] in self.uri:
@@ -99,10 +116,12 @@ class ProxyRequest(Request):
 
         packet += '\r\n'
 
+        packet += self.body
+
         return packet
 
     def change_user_agent(self, user_agent):
-        self.http_request_data['user-agent'] = user_agent
+        self.http_request_data['User-Agent'] = user_agent
 
 
 class Server:
@@ -172,9 +191,9 @@ class ProxyServerThread(Thread):
                 break
 
             forward_socket.send(proxy_request.convert_to_message().encode('ascii', 'ignore'))
-            forward_socket.settimeout(2)
+            # forward_socket.settimeout(2)
             forward_response = SocketUtils.recv_all(forward_socket)
-            Logger.log_packet(client_message, "Client Request")
+            Logger.log_packet(forward_response, "Server Response")
             forward_socket.close()
 
             self.client_socket.send(forward_response)

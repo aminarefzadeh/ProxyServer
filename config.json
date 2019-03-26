@@ -11,11 +11,11 @@
         "size": 200
     },
     "privacy": {
-        "enable": false,
+        "enable": true,
         "userAgent": "CN Proxy Server (v1.0.0)"
     },
     "restriction": {
-        "enable": true,
+        "enable": false,
         "adminData": "../admin",
         "targets": [
             {
