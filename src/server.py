@@ -1,16 +1,16 @@
 from threading import Thread
 import socket
-import sys
 
 from src.restricts import Restricts
 from src.logger import Logger
+from bs4 import BeautifulSoup
 
 
 class Request:
     def __init__(self, raw_packet=None):
         self.valid = True
 
-        if raw_packet is None or len(raw_packet)==0:
+        if raw_packet is None or len(raw_packet) == 0:
             self.valid = False
             self.method = ''
             self.uri = ''
@@ -37,9 +37,9 @@ class Request:
         del http_lines[0]
 
         index = 0
-        for index in range(0,len(http_lines)):
+        for index in range(0, len(http_lines)):
             item = http_lines[index]
-            if item == '' :
+            if item == '':
                 break
             if ": " in item:
                 parsed_line = item.split(": ")
@@ -48,7 +48,7 @@ class Request:
                 parsed_line = item.split(":")
                 self.http_request_data[parsed_line[0]] = parsed_line[1]
 
-        self.body=''
+        self.body = ''
         index += 1
 
         while index < len(http_lines):
@@ -59,10 +59,7 @@ class Request:
         if self.http_request_data["Host"] in self.uri:
             self.uri = self.uri[self.uri.find(self.http_request_data["Host"]) + len(self.http_request_data["Host"]):]
 
-
     def convert_to_message(self):
-
-
         packet = self.method + ' ' + self.uri + ' ' + self.version + '\r\n'
 
         for key, value in self.http_request_data.items():
@@ -113,14 +110,11 @@ class ProxyRequest(Request):
         self.http_request_data['User-Agent'] = user_agent
 
 
-
-from bs4 import BeautifulSoup
-
-class Response():
+class Response:
     def __init__(self, raw_packet=None):
         self.valid = True
 
-        if raw_packet is None or len(raw_packet)==0:
+        if raw_packet is None or len(raw_packet) == 0:
             self.valid = False
             self.message = ''
             self.status = 400
@@ -139,7 +133,7 @@ class Response():
 
         self.version = http_lines[0].split()[0]
         self.status = int(http_lines[0].split()[1])
-        self.message = http_lines[0][http_lines[0].find(str(self.status))+len(str(self.status))+1:]
+        self.message = http_lines[0][http_lines[0].find(str(self.status)) + len(str(self.status)) + 1:]
 
         self.http_request_data = {}
 
@@ -166,8 +160,6 @@ class Response():
             index += 1
 
     def convert_to_message(self):
-
-        # self.http_request_data['Content-Length'] = str(len(self.body))
         if 'Content-Length' in self.http_request_data:
             self.http_request_data.pop('Content-Length')
 
@@ -188,27 +180,27 @@ class Response():
 
 
 class ProxyResponse(Response):
-    def __init__(self,raw_input):
-        Response.__init__(self,raw_input)
+    def __init__(self, raw_input):
+        Response.__init__(self, raw_input)
 
-    def inject(self,config):
+    def inject(self, config):
         if not config.must_inject:
             return
         if not self.valid:
             return
         if self.status != 200:
             return
-        if not 'text/html' in self.http_request_data.get('Content-Type','')  :
+        if 'text/html' not in self.http_request_data.get('Content-Type', ''):
             return
 
-        soup = BeautifulSoup(self.body,'html.parser')
-        injection_element = soup.new_tag('p',id='ProxyInjection')
-        injection_element.attrs['style'] = 'background-color:brown; height:40px; width:100%; position:absolute; top:0px; left:0px; margin:0px; z-index: 1060; text-align: center;'
-        injection_element.insert(0,config.injection_body)
+        soup = BeautifulSoup(self.body, 'html.parser')
+        injection_element = soup.new_tag('p', id='ProxyInjection')
+        injection_element.attrs['style'] = 'background-color:brown; height:40px; width:100%; position:fixed; ' \
+                                           'top:0px; left:0px; margin:0px; z-index: 1060; text-align: center;'
+        injection_element.insert(0, config.injection_body)
         if soup.body:
-            soup.body.insert(0,injection_element)
+            soup.body.insert(0, injection_element)
             self.body = soup.prettify()
-
 
 
 class Server:
@@ -260,18 +252,16 @@ class ProxyServerThread(Thread):
 
             if http_request.method == "CONNECT":
                 Logger.log_message("TLS request ignored")
-                self.client_socket.send(ProxyServerThread.error_page(self.config,403,"Forbidden").encode('utf-8','ignore'))
+                self.client_socket.send(
+                    ProxyServerThread.error_page(self.config, 403, "Forbidden").encode('utf-8', 'ignore'))
                 continue
-
 
             Logger.log_packet(str(http_request), "Client Request")
 
             restrictor = Restricts(self.config)
             restriction_rule = restrictor.check_access(http_request)
-
-            if not (restriction_rule is None):
-                # print("restricted")
-                restrictor.send_disallow_response(self.client_socket, http_request)
+            if restriction_rule is not None:
+                restrictor.send_disallow_response(self.client_socket, http_request, restriction_rule.notify)
                 return
 
             proxy_request = ProxyRequest(http_request)
@@ -291,10 +281,9 @@ class ProxyServerThread(Thread):
             proxy_response = ProxyResponse(forward_response)
             Logger.log_packet(str(proxy_response), "Server Response")
 
-
-            if 'text/html' in proxy_response.http_request_data.get('Content-Type',''):
+            if 'text/html' in proxy_response.http_request_data.get('Content-Type', ''):
                 proxy_response.inject(config=self.config)
-                self.client_socket.send(proxy_response.convert_to_message().encode('utf-8','ignore'))
+                self.client_socket.send(proxy_response.convert_to_message().encode('utf-8', 'ignore'))
             else:
                 self.client_socket.send(forward_response)
         return
@@ -312,7 +301,7 @@ class ProxyServerThread(Thread):
 
         try:
             forward_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        except socket.error as err:
+        except socket.error:
             return None
 
         forward_socket.settimeout(1)
@@ -326,16 +315,16 @@ class ProxyServerThread(Thread):
         return forward_socket
 
     @staticmethod
-    def error_page(config,status,message):
+    def error_page(config, status, message):
         http_message = "<!DOCTYPE html>" \
                        "<html>" \
                        "<head><title>Forbidden</title></head>" \
                        "<body>" \
-                       "<h1> "+str(status) + " " + str(message) +" </h1>" \
-                       "</body>" \
-                       "</html>"
+                       "<h1> " + str(status) + " " + str(message) + " </h1>" \
+                                                                    "</body>" \
+                                                                    "</html>"
 
-        message = "HTTP/1.1 "+ str(status) + " " + str(message) + "\r\n"
+        message = "HTTP/1.1 " + str(status) + " " + str(message) + "\r\n"
         message += "Server: " + config.get_server_name() + "\r\n"
         message += "Content-Type: text/html; charset=utf-8"
         message += "Content-Length: " + str(len(http_message)) + "\r\n"
@@ -343,6 +332,7 @@ class ProxyServerThread(Thread):
         message += "\r\n"
         message += http_message
         return message
+
 
 class SocketUtils:
     def __init__(self):
@@ -359,6 +349,6 @@ class SocketUtils:
                     break
                 message += chunk
 
-        except Exception as err:
+        except Exception:
             return message
         return message
