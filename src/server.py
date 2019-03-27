@@ -263,6 +263,7 @@ class ProxyServerThread(Thread):
             restriction_rule = restrictor.check_access(http_request)
             if restriction_rule is not None:
                 restrictor.send_disallow_response(self.client_socket, http_request, restriction_rule.notify)
+                # return or break ???
                 return
 
             proxy_request = ProxyRequest(http_request)

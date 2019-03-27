@@ -4,7 +4,7 @@
     "logging": {
         "enable": true,
         "clear": true,
-        "logFile": "../proxy.log"
+        "logFile": "proxy.log"
     },
     "caching": {
         "enable": true,
@@ -15,8 +15,8 @@
         "userAgent": "CN Proxy Server (v1.0.0)"
     },
     "restriction": {
-        "enable": true,
-        "adminData": "../admin",
+        "enable": false,
+        "adminData": "admin",
         "targets": [
             {
                 "URL": "acm.ut.ac.ir",
