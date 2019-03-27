@@ -20,7 +20,7 @@ class Request:
 
         http_lines = raw_packet.decode("utf-8", "ignore").split("\r\n")
 
-        self.body = raw_packet[raw_packet.find("\r\n\r\n") + 4:]
+        # self.body = raw_packet[raw_packet.find("\r\n\r\n".encode("ascii")) + 4:]
 
         # while '' in http_lines:
         #     http_lines.remove('')
@@ -36,8 +36,9 @@ class Request:
 
         del http_lines[0]
 
-
-        for item in http_lines:
+        index = 0
+        for index in range(0,len(http_lines)):
+            item = http_lines[index]
             if item == '' :
                 break
             if ": " in item:
@@ -46,6 +47,14 @@ class Request:
             elif ":" in item:
                 parsed_line = item.split(":")
                 self.http_request_data[parsed_line[0]] = parsed_line[1]
+
+        self.body=''
+        index += 1
+
+        while index < len(http_lines):
+            self.body += http_lines[index]
+            self.body += "\r\n"
+            index += 1
 
         if self.http_request_data["Host"] in self.uri:
             self.uri = self.uri[self.uri.find(self.http_request_data["Host"]) + len(self.http_request_data["Host"]):]
@@ -61,7 +70,7 @@ class Request:
 
         packet += '\r\n'
 
-        packet += (self.body).decode("utf-8", "ignore")
+        packet += self.body
 
         return packet
 
@@ -122,7 +131,7 @@ class Response():
 
         http_lines = raw_packet.decode("utf-8", "ignore").split("\r\n")
 
-        self.body = raw_packet[raw_packet.find("\r\n\r\n")+4:]
+        # self.body = raw_packet[raw_packet.find("\r\n\r\n".encode("ascii"))+4:]
 
         if not len(http_lines):
             self.valid = False
@@ -137,8 +146,9 @@ class Response():
         del http_lines[0]
 
         index = 0
-        for item in http_lines:
-            if item == '' :
+        for index in range(0, len(http_lines)):
+            item = http_lines[index]
+            if item == '':
                 break
             if ": " in item:
                 parsed_line = item.split(": ")
@@ -146,6 +156,14 @@ class Response():
             elif ":" in item:
                 parsed_line = item.split(":")
                 self.http_request_data[parsed_line[0]] = parsed_line[1]
+
+        self.body = ''
+        index += 1
+
+        while index < len(http_lines):
+            self.body += http_lines[index]
+            self.body += "\r\n"
+            index += 1
 
     def convert_to_message(self):
 
@@ -189,8 +207,7 @@ class ProxyResponse(Response):
         injection_element.insert(0,config.injection_body)
         if soup.body:
             soup.body.insert(0,injection_element)
-
-        self.body = soup.prettify()
+            self.body = soup.prettify()
 
 
 
@@ -243,7 +260,7 @@ class ProxyServerThread(Thread):
 
             if http_request.method == "CONNECT":
                 Logger.log_message("TLS request ignored")
-                self.client_socket.send(ProxyServerThread.error_page(self.config,403,"Forbidden"))
+                self.client_socket.send(ProxyServerThread.error_page(self.config,403,"Forbidden").encode('utf-8','ignore'))
                 continue
 
 
