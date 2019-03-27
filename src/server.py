@@ -10,7 +10,7 @@ class Request:
     def __init__(self, raw_packet=None):
         self.valid = True
 
-        if raw_packet is None or raw_packet is '':
+        if raw_packet is None or len(raw_packet)==0:
             self.valid = False
             self.method = ''
             self.uri = ''
@@ -120,7 +120,7 @@ class Response():
     def __init__(self, raw_packet=None):
         self.valid = True
 
-        if raw_packet is None or raw_packet is '':
+        if raw_packet is None or len(raw_packet)==0:
             self.valid = False
             self.message = ''
             self.status = 400
