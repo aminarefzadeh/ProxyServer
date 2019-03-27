@@ -39,5 +39,5 @@ class Logger:
     def log_packet(message, title):
         output_message = "%s\n----------------------------------------------------------------------\n" % title
         output_message += message.decode("utf-8", "ignore")
-        output_message += "----------------------------------------------------------------------"
+        output_message += "\n----------------------------------------------------------------------"
         logging.info(output_message)

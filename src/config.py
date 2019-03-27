@@ -38,6 +38,10 @@ class Config:
             self.clear_log = logging_object['clear']
             self.log_file_path = logging_object['logFile']
 
+            injection_object = data['HTTPInjection']
+            self.must_inject = injection_object['enable']
+            self.injection_body = injection_object['post']['body']
+
     def get_server_name(self):
         return self.privacy_user_agent
 
