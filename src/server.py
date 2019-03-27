@@ -61,7 +61,7 @@ class Request:
 
         packet += '\r\n'
 
-        packet += self.body
+        packet += (self.body).decode("utf-8", "ignore")
 
         return packet
 
@@ -149,7 +149,9 @@ class Response():
 
     def convert_to_message(self):
 
-        self.http_request_data['Content-Length'] = str(len(self.body))
+        # self.http_request_data['Content-Length'] = str(len(self.body))
+        if 'Content-Length' in self.http_request_data:
+            self.http_request_data.pop('Content-Length')
 
         packet = self.version + ' ' + str(self.status) + ' ' + self.message + '\r\n'
 
@@ -181,9 +183,6 @@ class ProxyResponse(Response):
         if not 'text/html' in self.http_request_data.get('Content-Type','')  :
             return
 
-        # print(len(self.body))
-        # print(self.http_request_data.get('Content-Length',None))
-
         soup = BeautifulSoup(self.body,'html.parser')
         injection_element = soup.new_tag('p',id='ProxyInjection')
         injection_element.attrs['style'] = 'background-color:brown; height:40px; width:100%; position:absolute; top:0px; left:0px; margin:0px; z-index: 1060; text-align: center;'
@@ -192,10 +191,6 @@ class ProxyResponse(Response):
             soup.body.insert(0,injection_element)
 
         self.body = soup.prettify()
-        self.http_request_data['Content-Length'] = len(self.body)
-        # print(len(self.body))
-        # print(self.http_request_data.get('Content-Length', None))
-        # print("_________________________")
 
 
 
@@ -271,7 +266,7 @@ class ProxyServerThread(Thread):
             if forward_socket is None:
                 break
 
-            forward_socket.send(proxy_request.convert_to_message().encode('utf-8', 'ignore'))
+            forward_socket.send(proxy_request.convert_to_message().encode('ascii', 'ignore'))
             forward_socket.settimeout(2)
             forward_response = SocketUtils.recv_all(forward_socket)
             forward_socket.close()
