@@ -10,7 +10,7 @@ class Request:
     def __init__(self, raw_packet=None):
         self.valid = True
 
-        if raw_packet is None:
+        if raw_packet is None or raw_packet is '':
             self.valid = False
             self.method = ''
             self.uri = ''
@@ -19,6 +19,8 @@ class Request:
             return
 
         http_lines = raw_packet.decode("utf-8", "ignore").split("\r\n")
+
+        self.body = raw_packet[raw_packet.find("\r\n\r\n") + 4:]
 
         # while '' in http_lines:
         #     http_lines.remove('')
@@ -34,9 +36,8 @@ class Request:
 
         del http_lines[0]
 
-        index = 0
-        for index in range(0,len(http_lines)):
-            item = http_lines[index]
+
+        for item in http_lines:
             if item == '' :
                 break
             if ": " in item:
@@ -49,13 +50,6 @@ class Request:
         if self.http_request_data["Host"] in self.uri:
             self.uri = self.uri[self.uri.find(self.http_request_data["Host"]) + len(self.http_request_data["Host"]):]
 
-
-        self.body = ''
-        index += 1
-        while index < len(http_lines):
-            self.body += http_lines[index]
-            self.body += '\r\n'
-            index += 1
 
     def convert_to_message(self):
 
@@ -128,6 +122,8 @@ class Response():
 
         http_lines = raw_packet.decode("utf-8", "ignore").split("\r\n")
 
+        self.body = raw_packet[raw_packet.find("\r\n\r\n")+4:]
+
         if not len(http_lines):
             self.valid = False
             return
@@ -141,8 +137,7 @@ class Response():
         del http_lines[0]
 
         index = 0
-        for index in range(0,len(http_lines)):
-            item = http_lines[index]
+        for item in http_lines:
             if item == '' :
                 break
             if ": " in item:
@@ -151,13 +146,6 @@ class Response():
             elif ":" in item:
                 parsed_line = item.split(":")
                 self.http_request_data[parsed_line[0]] = parsed_line[1]
-
-        self.body = ''
-        index += 1
-        while index < len(http_lines):
-            self.body += http_lines[index]
-            self.body += '\r\n'
-            index += 1
 
     def convert_to_message(self):
 
@@ -193,6 +181,9 @@ class ProxyResponse(Response):
         if not 'text/html' in self.http_request_data.get('Content-Type','')  :
             return
 
+        # print(len(self.body))
+        # print(self.http_request_data.get('Content-Length',None))
+
         soup = BeautifulSoup(self.body,'html.parser')
         injection_element = soup.new_tag('p',id='ProxyInjection')
         injection_element.attrs['style'] = 'background-color:brown; height:40px; width:100%; position:absolute; top:0px; left:0px; margin:0px; z-index: 1060; text-align: center;'
@@ -201,6 +192,10 @@ class ProxyResponse(Response):
             soup.body.insert(0,injection_element)
 
         self.body = soup.prettify()
+        self.http_request_data['Content-Length'] = len(self.body)
+        # print(len(self.body))
+        # print(self.http_request_data.get('Content-Length', None))
+        # print("_________________________")
 
 
 
@@ -253,7 +248,7 @@ class ProxyServerThread(Thread):
 
             if http_request.method == "CONNECT":
                 Logger.log_message("TLS request ignored")
-                self.client_socket.send(ProxyServerThread.error_page(self.config,403,"Forbidden").encode('ascii', 'ignore'))
+                self.client_socket.send(ProxyServerThread.error_page(self.config,403,"Forbidden"))
                 continue
 
 
@@ -276,19 +271,20 @@ class ProxyServerThread(Thread):
             if forward_socket is None:
                 break
 
-            forward_socket.send(proxy_request.convert_to_message().encode('ascii', 'ignore'))
+            forward_socket.send(proxy_request.convert_to_message().encode('utf-8', 'ignore'))
             forward_socket.settimeout(2)
             forward_response = SocketUtils.recv_all(forward_socket)
             forward_socket.close()
 
             proxy_response = ProxyResponse(forward_response)
             Logger.log_packet(str(proxy_response), "Server Response")
-            proxy_response.inject(config=self.config)
 
-            # if proxy_response.valid :
-            self.client_socket.send(proxy_response.convert_to_message().encode('utf-8','ignore'))
-            # else:
-            #     self.client_socket.send(ProxyServerThread.error_page(self.config,404,"Not Found").encode('utf-8', 'ignore'))
+
+            if 'text/html' in proxy_response.http_request_data.get('Content-Type',''):
+                proxy_response.inject(config=self.config)
+                self.client_socket.send(proxy_response.convert_to_message().encode('utf-8','ignore'))
+            else:
+                self.client_socket.send(forward_response)
         return
 
     @staticmethod
