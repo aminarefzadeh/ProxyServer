@@ -123,13 +123,11 @@ class CacheController():
 
         if 'Last-Modified' in response_header :
             self.cache_id = ('Last-Modified',response_header.get('Last-Modified'))
-            self.cache_request_header = ('If-Modified-Since',self.cache_id)
+            self.cache_request_header = ('If-Modified-Since',self.cache_id[1])
 
         elif 'Etag' in response_header:
             self.cache_id = ('Etag',response_header.get('Etag'))
-            self.cache_request_header = ('If-None-Match',self.cache_id)
-        else:
-            self.cachable = False
+            self.cache_request_header = ('If-None-Match',self.cache_id[1])
 
 
 
@@ -187,7 +185,8 @@ class CacheController():
             headers['Cache-Control'] = 'public, max-age='+str(int(self.age.total_seconds()))
             headers['Expires'] = (now + self.age).strftime(CacheController.time_format)
             headers['Date'] = now.strftime(CacheController.time_format)
-            headers[self.cache_id[0]] = self.cache_id[1]
+            if self.cache_id != ('',''):
+                headers[self.cache_id[0]] = self.cache_id[1]
 
         else:
             headers['Cache-Control'] = 'no-cache'

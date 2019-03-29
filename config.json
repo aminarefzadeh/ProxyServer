@@ -7,7 +7,7 @@
         "logFile": "proxy.log"
     },
     "caching": {
-        "enable": false,
+        "enable": true,
         "size": 200
     },
     "privacy": {

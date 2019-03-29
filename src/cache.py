@@ -12,12 +12,12 @@ class CacheHandler():
         if self.cache_enable and proxy_request.method == "GET": # cachable check "GET" and "no-cache"
             key = proxy_request.addr
             cache_response = LRUCache.get(key)
-            cache_response = ProxyResponse()
             if not cache_response is -1:   # we have data in our cache
 
                 cache_header = proxy_request.get_cache_header() # header like ('if-modified-since') sended by user
 
                 if not cache_response.cache.is_expire():  # and it's not expire yet
+                    print("cache hit "+ key)
                     Logger.log_message("Cache HIT")
 
                     if cache_response.cache.is_modified(cache_header):
@@ -29,7 +29,8 @@ class CacheHandler():
 
                     proxy_request.clear_cache_header()
                     request_cache_header = cache_response.cache.get_cache_request_header()
-                    proxy_request.http_request_data[request_cache_header[0]] = request_cache_header[1]
+                    if not request_cache_header == ('',''):
+                        proxy_request.http_request_data[request_cache_header[0]] = request_cache_header[1]
 
                     proxy_response = forward(proxy_request)
 
@@ -37,6 +38,7 @@ class CacheHandler():
                         if proxy_response.status == 304:
                             cache_response.cache.update_cache(proxy_response.cache)
                             LRUCache.set(key,cache_response)
+                            print("cache hit "+ key)
                             Logger.log_message("Cache HIT")
                             if cache_response.cache.is_modified(cache_header):
                                 return cache_response
