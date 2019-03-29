@@ -83,6 +83,9 @@ class ClientRequest(Request):
                "\nmethod: " + str(self.method) + "\nuri:" + str(self.uri) + \
                "\nversion:" + str(self.version) + "\noptions:" + str(self.http_request_data)
 
+    def change_user_agent(self, user_agent):
+        self.http_request_data['User-Agent'] = user_agent
+
 
 class ProxyRequest(Request):
     def __init__(self, http_request):
@@ -97,7 +100,4 @@ class ProxyRequest(Request):
         self.http_request_data.pop('Proxy-Connection', None)
 
         self.body = http_request.body
-
-    def change_user_agent(self, user_agent):
-        self.http_request_data['User-Agent'] = user_agent
 

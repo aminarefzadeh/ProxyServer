@@ -3,16 +3,17 @@ from bs4 import BeautifulSoup
 class Response:
     def __init__(self, raw_packet=None):
         self.valid = True
+        self.message = ''
+        self.status = 400
+        self.version = ''
+        self.http_request_data = {}
+        self.body = ''
+
 
         self.raw_data = raw_packet
 
         if raw_packet is None or len(raw_packet) == 0:
             self.valid = False
-            self.message = ''
-            self.status = 400
-            self.version = ''
-            self.http_request_data = {}
-            self.body = ''
             return
 
         http_lines = raw_packet.decode("utf-8", "ignore").split("\r\n")
@@ -94,3 +95,31 @@ class ProxyResponse(Response):
         if soup.body:
             soup.body.insert(0, injection_element)
             self.body = soup.prettify()
+
+
+
+class CacheController():
+    def __init__(self,response_header,status):
+        # self.expire_date
+        # self.cache_status
+        # self.date
+        # self.modify_date
+        # self.init_time
+
+        cache_header = response_header.get('Cache-Control','').lower()
+        if cache_header=='':
+            cache_header = response_header.get('Pragma','').lower()
+
+        if status==200:
+            if 'max-age' in cache_header:
+                pass
+            elif 'no-cache' in cache_header:
+                pass
+            else:
+                pass
+        elif status == 304:
+            pass
+        else:
+            pass
+
+

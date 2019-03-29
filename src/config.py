@@ -42,6 +42,10 @@ class Config:
             self.must_inject = injection_object['enable']
             self.injection_body = injection_object['post']['body']
 
+            cache_object = data['caching']
+            self.cache_enable = cache_object['enable']
+            self.cache_size = cache_object['size']
+
     def get_server_name(self):
         return self.privacy_user_agent
 
