@@ -118,5 +118,20 @@ class ProxyRequest(Request):
     def change_user_agent(self, user_agent):
         self.http_request_data['User-Agent'] = user_agent
 
+    def clear_cache_header(self):
+        self.http_request_data.pop('If-Modified-Since', None)
+        self.http_request_data.pop('If-None-Match', None)
+        self.http_request_data.pop('Cache-Control', None)
+
+    def get_cache_header(self):
+        ret = None
+        if 'If-Modified-Since' in self.http_request_data :
+            ret = ('If-Modified-Since',self.http_request_data['If-Modified-Since'])
+        elif 'If-None-Match' in self.http_request_data :
+            ret = ('If-None-Match',self.http_request_data['If-None-Match'])
+
+        return ret
+
+
 
 

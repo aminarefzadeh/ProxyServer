@@ -12,6 +12,7 @@ class CacheHandler():
         if self.cache_enable and proxy_request.method == "GET": # cachable check "GET" and "no-cache"
             key = proxy_request.addr
             cache_response = LRUCache.get(key)
+            cache_response = ProxyResponse()
             if not cache_response is -1:   # we have data in our cache
 
                 cache_header = proxy_request.get_cache_header() # header like ('if-modified-since') sended by user
@@ -22,12 +23,12 @@ class CacheHandler():
                     if cache_response.cache.is_modified(cache_header):
                         return cache_response
                     else:
-                        return CacheHandler.get_304_response(cache_response.cache.get_cache_response_header)
+                        return CacheHandler.get_304_response(cache_response.cache.get_cache_response_header())
 
                 else: # cache date expired check it again
 
                     proxy_request.clear_cache_header()
-                    request_cache_header = cache_response.cache.get_cache_header()
+                    request_cache_header = cache_response.cache.get_cache_request_header()
                     proxy_request.http_request_data[request_cache_header[0]] = request_cache_header[1]
 
                     proxy_response = forward(proxy_request)
@@ -40,7 +41,7 @@ class CacheHandler():
                             if cache_response.cache.is_modified(cache_header):
                                 return cache_response
                             else:
-                                return CacheHandler.get_304_response(cache_response.cache.get_cache_response_header)
+                                return CacheHandler.get_304_response(cache_response.cache.get_cache_response_header())
 
                         elif proxy_response.cache.is_cachable():  # check status == 200 and can cache
                             LRUCache.set(key, proxy_response)  # caching data
@@ -48,7 +49,7 @@ class CacheHandler():
                             if proxy_response.cache.is_modified(cache_header):
                                 return proxy_response
                             else:
-                                return CacheHandler.get_304_response(proxy_response.cache.get_cache_response_header)
+                                return CacheHandler.get_304_response(proxy_response.cache.get_cache_response_header())
 
                         else:
                             LRUCache.pop(key)
