@@ -2,6 +2,8 @@ class Request:
     def __init__(self, raw_packet=None):
         self.valid = True
 
+        self.raw_data = raw_packet
+
         if raw_packet is None or len(raw_packet) == 0:
             self.valid = False
             self.method = ''
@@ -51,6 +53,17 @@ class Request:
         if self.http_request_data["Host"] in self.uri:
             self.uri = self.uri[self.uri.find(self.http_request_data["Host"]) + len(self.http_request_data["Host"]):]
 
+        self.addr = self.http_request_data["Host"]+self.uri
+
+        self.host_port = 80
+        if ":" in self.http_request_data["Host"]:
+            self.host_name = self.http_request_data["Host"].split(':')[0]
+            self.host_port = int(self.http_request_data["Host"].split(':')[1])
+        else:
+            self.host_name = self.http_request_data["Host"]
+
+
+
     def convert_to_message(self):
         packet = self.method + ' ' + self.uri + ' ' + self.version + '\r\n'
 
@@ -83,21 +96,27 @@ class ClientRequest(Request):
                "\nmethod: " + str(self.method) + "\nuri:" + str(self.uri) + \
                "\nversion:" + str(self.version) + "\noptions:" + str(self.http_request_data)
 
-    def change_user_agent(self, user_agent):
-        self.http_request_data['User-Agent'] = user_agent
 
 
 class ProxyRequest(Request):
     def __init__(self, http_request):
         Request.__init__(self)
-        self.method = http_request.method
-        self.uri = http_request.uri
-        self.version = 'HTTP/1.0'
+        self.__dict__ = http_request.__dict__.copy()
 
-        self.http_request_data = http_request.http_request_data
+        # self.method = http_request.method
+        # self.uri = http_request.uri
+        # self.body = http_request.body
+        #
+
+        self.http_request_data = http_request.http_request_data.copy()
+
+        self.version = 'HTTP/1.0'
         self.http_request_data['Accept-Encoding'] = 'deflate'
         self.http_request_data['Connection'] = 'Close'
         self.http_request_data.pop('Proxy-Connection', None)
 
-        self.body = http_request.body
+    def change_user_agent(self, user_agent):
+        self.http_request_data['User-Agent'] = user_agent
+
+
 

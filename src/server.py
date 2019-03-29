@@ -73,10 +73,11 @@ class ProxyServerThread(Thread):
                 # return or break ???
                 return
 
+            proxy_request = ProxyRequest(http_request)
             if self.config.get_user_agent() is not None:
-                http_request.change_user_agent(self.config.get_user_agent())
+                proxy_request.change_user_agent(self.config.get_user_agent())
 
-            proxy_response = cache_handler.parseRequest(http_request)
+            proxy_response = cache_handler.parseRequest(proxy_request)
 
             if proxy_response is None:
                 Logger.log_message("server response is not valid")
