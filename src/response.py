@@ -8,6 +8,7 @@ class Response:
         self.version = 'HTTP/1.1'
         self.http_request_data = {}
         self.body = ''
+        self.cache = CacheController()
 
 
         self.raw_data = raw_packet
@@ -70,8 +71,9 @@ class Response:
         return packet
 
     def __str__(self):
-        return "\nversion: " + str(self.version) + "\nstatus:" + str(self.status) + \
-               "\nmessage:" + str(self.message) + "\noptions:" + str(self.http_request_data)
+        return "\nversion: " + str(self.version) + "\nstatus: " + str(self.status) + \
+               "\nmessage: " + str(self.message) + "\noptions: " + str(self.http_request_data) + \
+                str(self.cache)
 
 
 class ProxyResponse(Response):
@@ -105,17 +107,19 @@ import datetime
 class CacheController():
 
     time_format = '%a, %d %b %Y %H:%M:%S GMT'
-    def __init__(self,response_header,status):
-        # self.expire_date
-        # self.cache_status
-        # self.date
-        # self.modify_date
-        # self.init_time
+    def __init__(self,response_header=None,status=None):
 
         self.refresh_time = datetime.datetime.now()
+        self.cache_id = ('','')
+        self.cache_request_header = ('', '')
+        self.age = datetime.timedelta(0)
+        self.cachable = True
 
-        self.cache_id = ''
-        self.cache_request_header = ('','')
+        if response_header == None or status == None:
+            self.cachable = False
+            return
+
+
 
         if 'Last-Modified' in response_header :
             self.cache_id = ('Last-Modified',response_header.get('Last-Modified'))
@@ -140,21 +144,17 @@ class CacheController():
         if 'max-age' in cache_header:
             cache_header = cache_header[cache_header.find('max-age')+len('max-age'):]
             cache_header = cache_header[cache_header.find('=')+1:]
-            datetime.timedelta()
-            self.age = datetime.timedelta(seconds=int(cache_header.split()[0]))
+            max_age = cache_header.split()[0].split(',')[0]
+            if 'd' in max_age:
+                self.age = datetime.timedelta(days=int(max_age[:max_age.find('d')]))
+            else:
+                self.age = datetime.timedelta(seconds=int(max_age))
 
         elif 'Date' in response_header and 'Expires' in response_header:
-            self.age = datetime.datetime.strptime(response_header.get('Expires'))-datetime.datetime.strptime(response_header.get('Date'))
-
-        else:
-            self.age = datetime.timedelta(0)
-
-    def __init__(self):
-        self.refresh_time = datetime.datetime.now()
-        self.cache_id = ''
-        self.cache_request_header = ('', '')
-        self.cachable = False
-        self.age = datetime.timedelta(0)
+            try:
+                self.age = datetime.datetime.strptime(response_header.get('Expires'),CacheController.time_format) - datetime.datetime.strptime(response_header.get('Date'),CacheController.time_format)
+            except:
+                self.age = datetime.timedelta(0)
 
     def is_expire(self):
         now = datetime.datetime.now()
@@ -184,7 +184,7 @@ class CacheController():
         headers = {}
         if self.cachable :
             now = datetime.datetime.now()
-            headers['Cache-Control'] = 'public, max-age='+str(self.age.total_seconds())
+            headers['Cache-Control'] = 'public, max-age='+str(int(self.age.total_seconds()))
             headers['Expires'] = (now + self.age).strftime(CacheController.time_format)
             headers['Date'] = now.strftime(CacheController.time_format)
             headers[self.cache_id[0]] = self.cache_id[1]
@@ -193,5 +193,14 @@ class CacheController():
             headers['Cache-Control'] = 'no-cache'
 
         return headers
+
+    def __str__(self):
+        timeformat = CacheController.time_format
+        return "\nCachable: " + str(self.cachable) + \
+               "\nLast-Refresh: " + self.refresh_time.strftime(timeformat) + \
+               "\nCache-Id: " + str(self.cache_id) + \
+               "\nAge: " + str(self.age.total_seconds())
+
+
 
 

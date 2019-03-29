@@ -17,7 +17,6 @@ def forward(proxy_request):
     forward_socket.close()
 
     proxy_response = ProxyResponse(forward_response)
-    Logger.log_packet(str(proxy_response), "Server Response")
 
     return proxy_response
 

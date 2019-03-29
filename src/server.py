@@ -85,6 +85,8 @@ class ProxyServerThread(Thread):
                 #     ProxyServerThread.error_page(self.config, 404, "Not Found").encode('utf-8', 'ignore'))
                 break
 
+            Logger.log_packet(str(proxy_response), "Server Response")
+
             if 'text/html' in proxy_response.http_request_data.get('Content-Type', ''):
                 proxy_response.inject(config=self.config)
                 self.client_socket.send(proxy_response.convert_to_message().encode('utf-8', 'ignore'))
