@@ -5,7 +5,7 @@ class Response:
         self.valid = True
         self.message = ''
         self.status = 400
-        self.version = ''
+        self.version = 'HTTP/1.1'
         self.http_request_data = {}
         self.body = ''
 
@@ -73,7 +73,7 @@ class Response:
 
 
 class ProxyResponse(Response):
-    def __init__(self, raw_input):
+    def __init__(self, raw_input=None):
         Response.__init__(self, raw_input)
 
     def inject(self, config):

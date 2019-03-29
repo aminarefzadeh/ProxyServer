@@ -1,6 +1,7 @@
 
 from src.logger import Logger
 from src.forward import forward
+from src.response import ProxyResponse
 
 class CacheHandler():
     def __init__(self,config):
@@ -11,29 +12,51 @@ class CacheHandler():
         if self.cache_enable and proxy_request.method == "GET": # cachable check "GET" and "no-cache"
             key = proxy_request.addr
             cache_response = LRUCache.get(key)
-            if cache_response != -1:
-                if not cache_response.is_expire():
-                    LRUCache.set(key,cache_response)
+            if not cache_response is -1:   # we have data in our cache
+
+                cache_header = proxy_request.get_cache_header() # header like ('if-modified-since') sended by user
+
+                if not cache_response.cache.is_expire():  # and it's not expire yet
                     Logger.log_message("Cache HIT")
-                    return cache_response
-                else:
+
+                    if cache_response.cache.is_modified(cache_header):
+                        return cache_response
+                    else:
+                        return CacheHandler.get_304_response(cache_response.cache.get_cache_response_header)
+
+                else: # cache date expired check it again
 
                     proxy_request.clear_cache_header()
-                    request_cache_header = cache_response.get_cache_header()
+                    request_cache_header = cache_response.cache.get_cache_header()
                     proxy_request.http_request_data[request_cache_header[0]] = request_cache_header[1]
 
                     proxy_response = forward(proxy_request)
 
-                    if proxy_request != None and proxy_response.valid :
+                    if proxy_response != None and proxy_response.valid :
                         if proxy_response.status == 304:
                             cache_response.cache.update_cache(proxy_response.cache)
                             LRUCache.set(key,cache_response)
                             Logger.log_message("Cache HIT")
-                            return cache_response
-                        elif proxy_response.status == 200 and proxy_response.cache.is_cachable():
+                            if cache_response.cache.is_modified(cache_header):
+                                return cache_response
+                            else:
+                                return CacheHandler.get_304_response(cache_response.cache.get_cache_response_header)
+
+                        elif proxy_response.cache.is_cachable():  # check status == 200 and can cache
                             LRUCache.set(key, proxy_response)  # caching data
+
+                            if proxy_response.cache.is_modified(cache_header):
+                                return proxy_response
+                            else:
+                                return CacheHandler.get_304_response(proxy_response.cache.get_cache_response_header)
+
                         else:
-                            pass
+                            LRUCache.pop(key)
+                            Logger.log_message("Cache pop element !!")
+
+                    else:
+                        LRUCache.pop(key)
+                        Logger.log_message("Cache pop element 2 !!")
 
                     return proxy_response
             else:
@@ -44,6 +67,16 @@ class CacheHandler():
                 return proxy_response
         else:
             return forward(proxy_request)
+
+    @staticmethod
+    def get_304_response(http_header):
+        response_304 = ProxyResponse()
+        response_304.status = 304
+        response_304.message = "Not Modified"
+        response_304.http_request_data = http_header
+
+        return response_304
+
 
 
 
@@ -77,6 +110,15 @@ class LRUCache:
             if len(LRUCache.cache) >= LRUCache.capacity:
                 LRUCache.cache.popitem(last=False)
         LRUCache.cache[key] = value
+        LRUCache.rlock.release()
+
+    @staticmethod
+    def pop(key):
+        LRUCache.rlock.acquire()
+        try:
+            LRUCache.cache.pop(key)
+        except KeyError:
+            pass
         LRUCache.rlock.release()
 
     @staticmethod
