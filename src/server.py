@@ -3,19 +3,18 @@ import socket
 
 from src.restricts import Restricts
 from src.logger import Logger
-from src.request import ProxyRequest,ClientRequest
-from src.response import ProxyResponse
-from src.cache import LRUCache,CacheHandler
+from src.request import ProxyRequest, ClientRequest
+from src.cache import LRUCache, CacheHandler
 from src.socketutils import SocketUtils
 from src.account import AccountHandler
 from src.injector import Injector
+
 
 class Server:
     def __init__(self, config):
         self.config = config
         self.host = config.host
         self.port = config.port
-
 
     def start_server(self):
         server_socket = socket.socket()
@@ -61,7 +60,7 @@ class ProxyServerThread(Thread):
 
             client_message = SocketUtils.recv_all(self.client_socket)
 
-            AccountHandler.sub_volume(self.client_address,len(client_message))
+            AccountHandler.sub_volume(self.client_address, len(client_message))
 
             if len(client_message) == 0:
                 self.client_socket.close()
@@ -100,7 +99,7 @@ class ProxyServerThread(Thread):
 
             Logger.log_packet(str(proxy_response), "Server Response")
 
-            injecor = Injector(self.config,proxy_response)
+            injecor = Injector(self.config, proxy_response)
 
             data = injecor.inject()
 
@@ -109,7 +108,6 @@ class ProxyServerThread(Thread):
             self.client_socket.send(data)
 
         return
-
 
     @staticmethod
     def error_page(config, status, message):
@@ -129,6 +127,3 @@ class ProxyServerThread(Thread):
         message += "\r\n"
         message += http_message
         return message
-
-
-

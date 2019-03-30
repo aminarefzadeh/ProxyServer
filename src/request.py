@@ -14,11 +14,6 @@ class Request:
 
         http_lines = raw_packet.decode("utf-8", "ignore").split("\r\n")
 
-        # self.body = raw_packet[raw_packet.find("\r\n\r\n".encode("ascii")) + 4:]
-
-        # while '' in http_lines:
-        #     http_lines.remove('')
-
         if not len(http_lines):
             self.valid = False
             return
@@ -53,7 +48,7 @@ class Request:
         if self.http_request_data["Host"] in self.uri:
             self.uri = self.uri[self.uri.find(self.http_request_data["Host"]) + len(self.http_request_data["Host"]):]
 
-        self.addr = self.http_request_data["Host"]+self.uri
+        self.addr = self.http_request_data["Host"] + self.uri
 
         self.host_port = 80
         if ":" in self.http_request_data["Host"]:
@@ -61,8 +56,6 @@ class Request:
             self.host_port = int(self.http_request_data["Host"].split(':')[1])
         else:
             self.host_name = self.http_request_data["Host"]
-
-
 
     def convert_to_message(self):
         packet = self.method + ' ' + self.uri + ' ' + self.version + '\r\n'
@@ -97,7 +90,6 @@ class ClientRequest(Request):
                "\nversion:" + str(self.version) + "\noptions:" + str(self.http_request_data)
 
 
-
 class ProxyRequest(Request):
     def __init__(self, http_request):
         Request.__init__(self)
@@ -125,13 +117,9 @@ class ProxyRequest(Request):
 
     def get_cache_header(self):
         ret = None
-        if 'If-Modified-Since' in self.http_request_data :
-            ret = ('If-Modified-Since',self.http_request_data['If-Modified-Since'])
-        elif 'If-None-Match' in self.http_request_data :
-            ret = ('If-None-Match',self.http_request_data['If-None-Match'])
+        if 'If-Modified-Since' in self.http_request_data:
+            ret = ('If-Modified-Since', self.http_request_data['If-Modified-Since'])
+        elif 'If-None-Match' in self.http_request_data:
+            ret = ('If-None-Match', self.http_request_data['If-None-Match'])
 
         return ret
-
-
-
-

@@ -1,7 +1,9 @@
-
 from threading import RLock
 
-class AccountHandler():
+
+class AccountHandler:
+    def __init__(self):
+        pass
 
     user_dict = None
     lock = RLock()
@@ -17,7 +19,7 @@ class AccountHandler():
 
         AccountHandler.lock.acquire()
         if ip in AccountHandler.user_dict:
-            access =  AccountHandler.user_dict[ip] > 0
+            access = AccountHandler.user_dict[ip] > 0
         AccountHandler.lock.release()
 
         return access
@@ -27,10 +29,6 @@ class AccountHandler():
         ip = address[0]
 
         AccountHandler.lock.acquire()
-        if ip in AccountHandler.user_dict :
+        if ip in AccountHandler.user_dict:
             AccountHandler.user_dict[ip] -= value
         AccountHandler.lock.release()
-
-
-
-

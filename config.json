@@ -15,12 +15,12 @@
         "userAgent": "CN Proxy Server (v1.0.0)"
     },
     "restriction": {
-        "enable": false,
+        "enable": true,
         "adminData": "admin",
         "targets": [
             {
                 "URL": "acm.ut.ac.ir",
-                "notify": true
+                "notify": false
             }
         ]
     },

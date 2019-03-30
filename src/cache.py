@@ -1,20 +1,22 @@
-
 from src.logger import Logger
 from src.forward import forward
 from src.response import ProxyResponse
+import collections
+from threading import RLock
 
-class CacheHandler():
-    def __init__(self,config):
+
+class CacheHandler:
+    def __init__(self, config):
         self.cache_enable = config.cache_enable
 
-    def parseRequest(self,proxy_request):
+    def parseRequest(self, proxy_request):
 
-        if self.cache_enable and proxy_request.method == "GET": # cachable check "GET" and "no-cache"
+        if self.cache_enable and proxy_request.method == "GET":  # cachable check "GET" and "no-cache"
             key = proxy_request.addr
             cache_response = LRUCache.get(key)
-            if not cache_response is -1:   # we have data in our cache
+            if cache_response is not -1:  # we have data in our cache
 
-                cache_header = proxy_request.get_cache_header() # header like ('if-modified-since') sended by user
+                cache_header = proxy_request.get_cache_header()  # header like ('if-modified-since') sended by user
 
                 if not cache_response.cache.is_expire():  # and it's not expire yet
                     Logger.log_message("Cache HIT " + key)
@@ -24,19 +26,19 @@ class CacheHandler():
                     else:
                         return CacheHandler.get_304_response(cache_response.cache.get_cache_response_header())
 
-                else: # cache date expired check it again
+                else:  # cache date expired check it again
 
                     proxy_request.clear_cache_header()
                     request_cache_header = cache_response.cache.get_cache_request_header()
-                    if not request_cache_header == ('',''):
+                    if not request_cache_header == ('', ''):
                         proxy_request.http_request_data[request_cache_header[0]] = request_cache_header[1]
 
                     proxy_response = forward(proxy_request)
 
-                    if proxy_response != None and proxy_response.valid :
+                    if proxy_response is not None and proxy_response.valid:
                         if proxy_response.status == 304:
                             cache_response.cache.update_cache(proxy_response.cache)
-                            LRUCache.set(key,cache_response)
+                            LRUCache.set(key, cache_response)
                             Logger.log_message("Cache HIT " + key)
                             if cache_response.cache.is_modified(cache_header):
                                 return cache_response
@@ -62,8 +64,8 @@ class CacheHandler():
                     return proxy_response
             else:
                 proxy_response = forward(proxy_request)
-                if proxy_response != None and proxy_response.valid and proxy_response.cache.is_cachable():
-                    LRUCache.set(key,proxy_response)   #caching data
+                if proxy_response is not None and proxy_response.valid and proxy_response.cache.is_cachable():
+                    LRUCache.set(key, proxy_response)  # caching data
 
                 return proxy_response
         else:
@@ -79,12 +81,9 @@ class CacheHandler():
         return response_304
 
 
-
-
-import collections
-from threading import RLock
-
 class LRUCache:
+    def __init__(self):
+        pass
 
     capacity = 200
     cache = collections.OrderedDict()
@@ -93,7 +92,6 @@ class LRUCache:
     @staticmethod
     def get(key):
         LRUCache.rlock.acquire()
-        value = -1
         try:
             value = LRUCache.cache.pop(key)
             LRUCache.cache[key] = value

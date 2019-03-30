@@ -1,9 +1,8 @@
-
-
 from bs4 import BeautifulSoup
 
-class Injector():
-    def __init__(self,config,response):
+
+class Injector:
+    def __init__(self, config, response):
         self.config = config
         self.response = response
 

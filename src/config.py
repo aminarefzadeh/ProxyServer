@@ -2,7 +2,6 @@ import json
 
 
 class Config:
-
     class RestrictedHost:
         def __init__(self, json_object):
             self.url = json_object['URL']
@@ -47,7 +46,7 @@ class Config:
             self.cache_size = cache_object['size']
 
             accounting_object = data['accounting']
-            self.user_accounts = { user['IP'] : int(user['volume']) for user in accounting_object['users']}
+            self.user_accounts = {user['IP']: int(user['volume']) for user in accounting_object['users']}
 
     def get_server_name(self):
         return self.privacy_user_agent
