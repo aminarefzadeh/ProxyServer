@@ -7,12 +7,14 @@ from src.request import ProxyRequest,ClientRequest
 from src.response import ProxyResponse
 from src.cache import LRUCache,CacheHandler
 from src.socketutils import SocketUtils
+from src.account import AccountHandler
 
 class Server:
     def __init__(self, config):
         self.config = config
         self.host = config.host
         self.port = config.port
+
 
     def start_server(self):
         server_socket = socket.socket()
@@ -24,6 +26,7 @@ class Server:
         Logger.log_message("Server socket bind to port %s" % port)
         Logger.log_message("Server socket listening for incoming connections...")
         LRUCache.set_capacity(self.config.cache_size)
+        AccountHandler.set_config(config=self.config)
         while True:
             server_socket.listen(10)
             client_socket, client_address = server_socket.accept()
@@ -49,7 +52,14 @@ class ProxyServerThread(Thread):
         cache_handler = CacheHandler(self.config)
 
         while True:
+            if not AccountHandler.can_access(self.client_address):
+                self.client_socket.send(
+                    ProxyServerThread.error_page(self.config, 401, "Unauthorized").encode('utf-8', 'ignore'))
+                return
+
             client_message = SocketUtils.recv_all(self.client_socket)
+            AccountHandler.sub_volume(self.client_address,len(client_message))
+
             if len(client_message) == 0:
                 self.client_socket.close()
                 break
@@ -87,9 +97,12 @@ class ProxyServerThread(Thread):
 
             Logger.log_packet(str(proxy_response), "Server Response")
 
+            AccountHandler.sub_volume(self.client_address, len(proxy_response.raw_data))
+
             if 'text/html' in proxy_response.http_request_data.get('Content-Type', ''):
                 proxy_response.inject(config=self.config)
-                self.client_socket.send(proxy_response.convert_to_message().encode('utf-8', 'ignore'))
+                data = proxy_response.convert_to_message().encode('utf-8', 'ignore')
+                self.client_socket.send(data)
             else:
                 self.client_socket.send(proxy_response.raw_data)
         return
