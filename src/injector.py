@@ -27,4 +27,4 @@ class Injector():
                 soup.body.insert(0, injection_element)
                 self.response.body = soup.prettify()
 
-        return self.response.convert_to_message()
+        return self.response.convert_to_message().encode('utf-8', 'ignore')

@@ -17,8 +17,7 @@ class CacheHandler():
                 cache_header = proxy_request.get_cache_header() # header like ('if-modified-since') sended by user
 
                 if not cache_response.cache.is_expire():  # and it's not expire yet
-                    print("cache hit "+ key)
-                    Logger.log_message("Cache HIT")
+                    Logger.log_message("Cache HIT " + key)
 
                     if cache_response.cache.is_modified(cache_header):
                         return cache_response
@@ -38,8 +37,7 @@ class CacheHandler():
                         if proxy_response.status == 304:
                             cache_response.cache.update_cache(proxy_response.cache)
                             LRUCache.set(key,cache_response)
-                            print("cache hit "+ key)
-                            Logger.log_message("Cache HIT")
+                            Logger.log_message("Cache HIT " + key)
                             if cache_response.cache.is_modified(cache_header):
                                 return cache_response
                             else:
