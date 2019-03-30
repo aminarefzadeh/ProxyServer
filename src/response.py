@@ -80,25 +80,7 @@ class ProxyResponse(Response):
     def __init__(self, raw_input=None):
         Response.__init__(self, raw_input)
 
-    def inject(self, config):
-        if not config.must_inject:
-            return
-        if not self.valid:
-            return
-        if self.status != 200:
-            return
-        if 'text/html' not in self.http_request_data.get('Content-Type', ''):
-            return
 
-        soup = BeautifulSoup(self.body, 'html.parser')
-        injection_element = soup.new_tag('p', id='ProxyInjection')
-        injection_element.attrs['style'] = 'background-color:brown; height:40px; width:100%; position:fixed; ' \
-                                           'top:0px; left:0px; margin:0px; padding: 15px 0 0 0;' \
-                                           'z-index: 1060; text-align: center; color: white'
-        injection_element.insert(0, config.injection_body)
-        if soup.body:
-            soup.body.insert(0, injection_element)
-            self.body = soup.prettify()
 
 
 

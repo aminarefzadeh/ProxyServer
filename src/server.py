@@ -8,6 +8,7 @@ from src.response import ProxyResponse
 from src.cache import LRUCache,CacheHandler
 from src.socketutils import SocketUtils
 from src.account import AccountHandler
+from src.injector import Injector
 
 class Server:
     def __init__(self, config):
@@ -52,12 +53,14 @@ class ProxyServerThread(Thread):
         cache_handler = CacheHandler(self.config)
 
         while True:
+
             if not AccountHandler.can_access(self.client_address):
                 self.client_socket.send(
                     ProxyServerThread.error_page(self.config, 401, "Unauthorized").encode('utf-8', 'ignore'))
                 return
 
             client_message = SocketUtils.recv_all(self.client_socket)
+
             AccountHandler.sub_volume(self.client_address,len(client_message))
 
             if len(client_message) == 0:
@@ -97,14 +100,14 @@ class ProxyServerThread(Thread):
 
             Logger.log_packet(str(proxy_response), "Server Response")
 
-            AccountHandler.sub_volume(self.client_address, len(proxy_response.raw_data))
+            injecor = Injector(self.config,proxy_response)
 
-            if 'text/html' in proxy_response.http_request_data.get('Content-Type', ''):
-                proxy_response.inject(config=self.config)
-                data = proxy_response.convert_to_message().encode('utf-8', 'ignore')
-                self.client_socket.send(data)
-            else:
-                self.client_socket.send(proxy_response.raw_data)
+            data = injecor.inject()
+
+            AccountHandler.sub_volume(self.client_address, len(data))
+
+            self.client_socket.send(data)
+
         return
 
 
